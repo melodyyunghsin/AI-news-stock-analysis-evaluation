@@ -5,6 +5,12 @@ Gemini, and Anthropic Claude) can predict short-horizon stock direction from
 financial news headlines + bodies, evaluated against actual returns at
 1d / 3d / 5d / 10d / 21d horizons.
 
+> **Related project:** the browser extension that consumes these models in
+> production lives at
+> [melodyyunghsin/AI-news-stock-analysis](https://github.com/melodyyunghsin/AI-news-stock-analysis).
+> This repo is the offline benchmark used to pick which model the extension
+> ships with.
+
 ## What's in this repo
 
 ```
