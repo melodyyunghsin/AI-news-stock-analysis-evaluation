@@ -1,0 +1,3 @@
+Ticker,horizon,pred_UP_actual_UP,pred_UP_actual_DOWN,pred_UP_actual_NO IMPACT,pred_DOWN_actual_UP,pred_DOWN_actual_DOWN,pred_DOWN_actual_NO IMPACT,pred_NO IMPACT_actual_UP,pred_NO IMPACT_actual_DOWN,pred_NO IMPACT_actual_NO IMPACT
+GM,5d,52,1,0,16,0,0,0,0,0
+GOOG,5d,379,261,0,150,62,0,0,0,0

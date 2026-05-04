@@ -1,0 +1,3 @@
+Ticker,horizon,samples,direction_accuracy,strength_accuracy,strength_accuracy_conditional
+GM,21d,0,,,
+GOOG,21d,1657,0.5763427881713941,0.4459867229933615,0.235968617984309

@@ -1,0 +1,44 @@
+# Secrets
+.env
+.env.local
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Virtual envs
+evaluation_v2_venv/
+venv/
+.venv/
+env/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Large source data (re-downloadable)
+data/nasdaq_exteral_data.csv
+data/cleaned_dataset.parquet
+data/small_50.parquet
+data/full_history/
+data/article_batches/
+
+# Pipeline outputs (reproducible from code)
+data/return_batches/
+data/return_batches_clean/
+data/prediction_batches/
+data/prediction_batches_qwen/
+data/evaluation_results/
+data/evaluation_results_qwen/
+data/focused_dataset/
+data/focused_predictions_qwen_k5/
+data/focused_relevance_cache.parquet
+data/claude_ceiling_test/
+
+# Keep evaluation_summary/ and evaluation_summary_qwen/ as report artifacts
+# (they're small CSVs/JSON — explicitly NOT ignored)
