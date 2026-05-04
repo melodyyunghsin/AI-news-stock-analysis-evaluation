@@ -114,7 +114,8 @@ switching between the standard and focused-evaluation runs.
 This repo does **not** ship the underlying article corpus (~25 GB) or the
 price history dump. To reproduce from scratch you need:
 
-- The FNSPID Nasdaq news dataset (or equivalent ticker-tagged news parquet)
+- The [FNSPID Financial News Dataset](https://github.com/Zdong104/FNSPID_Financial_News_Dataset)
+  (or an equivalent ticker-tagged news parquet)
 - Daily OHLCV CSVs per ticker under `data/full_history/{TICKER}.csv` with
   columns `date`, `close`
 
