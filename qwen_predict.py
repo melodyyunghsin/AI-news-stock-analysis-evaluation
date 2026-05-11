@@ -18,9 +18,9 @@ OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 OLLAMA_API_URL  = f"{OLLAMA_BASE_URL}/chat/completions"
 MODEL           = "qwen2.5:7b"
 
-RETURN_DIR = "data/return_batches_clean"  # Use pre-cleaned articles
-PRED_DIR   = "data/prediction_batches_qwen"
-EVAL_DIR   = "data/evaluation_results_qwen"
+RETURN_DIR = "data/focused_dataset"  # Use pre-cleaned articles
+PRED_DIR   = "data/focused_predictions_qwen_k5"
+EVAL_DIR   = "data/focused_evaluation_results_qwen_k5"
 PRICE_DIR  = "data/full_history"
 
 os.makedirs(PRED_DIR, exist_ok=True)
@@ -31,14 +31,14 @@ MAX_RETRIES  = 3
 
 HORIZONS = ["1d", "3d", "5d", "10d", "21d"]
 
-RELEVANCE_THRESHOLD = 0.4  # Skip prediction for articles below this relevance
+RELEVANCE_THRESHOLD = 0.0  # Skip prediction for articles below this relevance
 
 # Self-consistency sampling for the prediction step.
 # K_SAMPLES = 1: legacy behavior (one call per horizon, model self-rates confidence).
 # K_SAMPLES > 1: call k times at SAMPLE_TEMPERATURE, majority-vote the direction,
 #                use vote agreement (e.g. 4/5 = 0.8) as the calibrated confidence.
 # K=5 typically adds 3-5pp accuracy and produces reliable calibration, at 5x cost.
-K_SAMPLES = 1
+K_SAMPLES = 5
 SAMPLE_TEMPERATURE = 0.8
 
 # Toggle between enhanced two-step pipeline and legacy single-prompt pipeline
