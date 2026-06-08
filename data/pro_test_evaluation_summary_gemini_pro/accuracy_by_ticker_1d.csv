@@ -1,0 +1,4 @@
+Ticker,horizon,samples,direction_accuracy,direction_wf1,direction_mcc
+AAPL,1d,40,0.55,0.55,0.1
+AMZN,1d,40,0.4,0.36,-0.23094010767585033
+TSLA,1d,40,0.65,0.6464646464646464,0.3061862178478973
