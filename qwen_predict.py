@@ -18,9 +18,9 @@ OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 OLLAMA_API_URL  = f"{OLLAMA_BASE_URL}/chat/completions"
 MODEL           = "qwen2.5:7b"
 
-RETURN_DIR = "data/focused_dataset"  # Use pre-cleaned articles
-PRED_DIR   = "data/focused_predictions_qwen_k5"
-EVAL_DIR   = "data/focused_evaluation_results_qwen_k5"
+RETURN_DIR = "data/balanced_focused_dataset"  # Use pre-cleaned articles
+PRED_DIR   = "data/balanced_focused_predictions_qwen_k5"
+EVAL_DIR   = "data/balanced_focused_evaluation_results_qwen_k5"
 PRICE_DIR  = "data/full_history"
 
 os.makedirs(PRED_DIR, exist_ok=True)

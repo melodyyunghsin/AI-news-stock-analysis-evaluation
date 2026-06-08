@@ -24,7 +24,7 @@ from compute_returns_50_with_horizon import (
     get_majority_direction_from_csv,
 )
 
-PRED_DIR = "data/prediction_batches_qwen"
+PRED_DIR = "data/balanced_focused_predictions_gemini_k5"
 
 
 def backfill_file(path):
