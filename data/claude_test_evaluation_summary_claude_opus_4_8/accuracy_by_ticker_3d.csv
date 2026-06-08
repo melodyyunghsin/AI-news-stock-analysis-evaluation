@@ -1,0 +1,2 @@
+Ticker,horizon,samples,direction_accuracy,direction_wf1,direction_mcc
+AAPL,3d,44,0.5454545454545454,0.5445134575569358,0.09128709291752768
