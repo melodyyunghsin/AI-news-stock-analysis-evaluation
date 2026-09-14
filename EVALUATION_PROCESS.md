@@ -70,7 +70,7 @@ Within each horizon's eval set, metrics are recomputed separately for POS-toned 
 
 ### 4.3 Calibration Threshold Sweep
 
-The K = 5 vote agreement provides a continuous P(UP) score (`vote_up / K`). Decision thresholds from 0.0 to 1.0 are swept; for each threshold we report accuracy, MCC, and the resulting `pred_up_rate`. With a balanced 50/50 ground truth, the threshold that yields `pred_up_rate ≈ 0.5` reveals whether the model has an exploitable directional bias.
+The K = 11 vote agreement provides a continuous P(UP) score (`vote_up / K`). Decision thresholds from 0.0 to 1.0 are swept; for each threshold we report accuracy, MCC, and the resulting `pred_up_rate`. With a balanced 50/50 ground truth, the threshold that yields `pred_up_rate ≈ 0.5` reveals whether the model has an exploitable directional bias.
 
 ## 5. Results
 
@@ -88,65 +88,93 @@ The K = 5 vote agreement provides a continuous P(UP) score (`vote_up / K`). Deci
 
 **Interpretation**: the pipeline shows weak positive signal at the 1-day horizon (~+0.04 MCC) that is below the run-to-run noise floor of a single K=11 run. The signal magnitude is consistent with published LLM-based direction-prediction benchmarks (~55-58% accuracy ceiling for mega-cap news, e.g., FinGPT, LLMFactor), but it cannot be reliably distinguished from zero in any single run. The other horizons show point estimates near zero or slightly negative; no horizon is statistically significant at 95% in this single run.
 
-What this evaluation *can* defensibly claim — even with the noise floor caveat — is the **direction of comparisons**: the LLM pipeline consistently beats simpler alternatives (Section 6.3) and frontier-tier models (Sections 6.1, 6.2) across all five horizons, with margins much larger than the run-to-run K-sample variance.
+What this evaluation *can* still defensibly claim — even with the noise floor caveat — is that the LLM pipeline beats off-the-shelf finance sentiment (FinBERT) at every horizon and short-horizon price momentum at 1d–10d (Section 6.3). The frontier-model comparisons (Sections 6.1, 6.2) are run on much smaller subsets and are **inconclusive** — they do not show a clear win or loss for the bigger models.
 
 ### 5.2 Per-ticker Signal Strength (1d horizon)
 
-| Ticker | Samples | Accuracy | MCC |
-|---|---:|---:|---:|
-| AAPL | 100 | 60.0% | +0.20 |
-| GOOG | 100 | 58.0% | +0.16 |
-| MSFT | 72 | 61.1% | +0.23 |
-| NVDA | 100 | 55.0% | +0.10 |
-| TSM  | 60  | 66.7% | +0.35 |
-| AMZN | 52  | 48.1% | −0.04 |
-| TSLA | 100 | 46.0% | −0.08 |
+| Ticker | Samples | Accuracy | MCC | 95% CI |
+|---|---:|---:|---:|:---:|
+| AAPL | 100 | 50.0% | 0.000  | [−0.198, +0.199] |
+| GOOG | 100 | 51.0% | +0.020 | [−0.166, +0.207] |
+| MSFT | 72  | 50.0% | 0.000  | [−0.227, +0.242] |
+| NVDA | 100 | 55.0% | +0.103 | [−0.104, +0.287] |
+| TSM  | 60  | 55.0% | +0.101 | [−0.156, +0.334] |
+| AMZN | 52  | 50.0% | 0.000  | [−0.257, +0.281] |
+| TSLA | 100 | 54.0% | +0.081 | [−0.118, +0.294] |
 
-AAPL, GOOG, MSFT, NVDA, and TSM show consistent positive signal across horizons. AMZN and TSLA underperform — MCC is near zero or negative.
+At 1d, NVDA, TSM, and TSLA carry the highest point estimates (+0.08 to +0.10 MCC), but **every per-ticker 95% CI spans 0** — no individual ticker reaches significance at 1d with 50–100 samples. Individual per-ticker MCCs should therefore not be over-interpreted (see Section 8.4).
 
-### 5.3 Tone-stratified Findings — The Signal Lives in NEG
+Across all 35 (ticker × horizon) cells, only four clear the significance bar (95% CI excluding 0):
 
-| Horizon | POS subset MCC | NEG subset MCC |
-|---|---:|---:|
-| 1d  | +0.045 | **+0.205** |
-| 3d  | +0.069 | +0.049 |
-| 5d  | −0.026 | **+0.133** |
-| 10d | −0.064 | **+0.113** |
-| 21d | −0.022 | **+0.126** |
+| Cell | Samples | Accuracy | MCC | 95% CI | Verdict |
+|---|---:|---:|---:|:---:|:---:|
+| TSM 10d  | 60  | 61.7% | +0.237 | [+0.005, +0.472] | **significant +** |
+| NVDA 5d  | 100 | 38.0% | −0.243 | [−0.424, −0.053] | significant − |
+| MSFT 10d | 24  | 33.3% | −0.447 | [−0.671, −0.213] | significant − |
+| TSLA 21d | 100 | 40.0% | −0.200 | [−0.396, −0.006] | significant − |
 
-On POS articles the model effectively defaults to UP (matching the 50% UP rate in the balanced set), so MCC stays near zero. On NEG articles the model correctly drops its UP-prediction rate to ~45–49% and achieves materially positive MCC (+0.10 to +0.21).
+The remaining 31 cells are statistically indistinguishable from random. **TSM @ 10d is the only ticker × horizon with a real positive signal** (this is the single combination the extension's reliability badge marks as "Signal"); the three significant-negative cells are consistent with small-sample noise and short-term reversal rather than a usable "short" signal.
 
-**Practical implication**: A deployable system would trade only on NEG-toned articles (~17% of news flow) for substantially higher precision than the all-articles result suggests.
+### 5.3 Tone-stratified Findings
+
+Within each horizon's balanced eval set, metrics are recomputed separately for POS- and NEG-toned articles:
+
+| Horizon | POS subset MCC | NEG subset MCC | POS pred-UP | NEG pred-UP |
+|---|---:|---:|---:|---:|
+| 1d  | +0.021 | +0.070 | 52.4% | 61.6% |
+| 3d  | +0.077 | −0.057 | 54.2% | 60.8% |
+| 5d  | 0.000  | +0.016 | 52.7% | 60.5% |
+| 10d | +0.040 | 0.000  | 51.2% | 62.9% |
+| 21d | −0.036 | −0.064 | 48.6% | 59.9% |
+
+The differences between the POS and NEG subsets are small and, with ~250–290 articles per subset, none of these MCC values is individually significant. Two observations:
+
+- The model does **not** flip to DOWN on negative-toned articles — if anything it predicts UP *more* on NEG-toned news (~60–63%) than on POS-toned news (~49–54%). This is the opposite of a sentiment-following classifier, and it is why the overall pred-UP rate stays above 50% even on a perfectly balanced set.
+- The 1d NEG cell (+0.070) is the strongest tone cell, but it is well within noise.
+
+**A strong "the signal lives in NEG articles" effect appeared in earlier development (K=5) runs but did NOT replicate** in the final K=11, 4-way-balanced run. We therefore do not claim a deployable tone gate; see Section 8.2 for the related (failed) attempt to engineer the UP bias away.
 
 ## 6. Model Comparisons: Frontier Models vs Flash-Lite
 
-Two subset experiments tested whether stronger LLMs improve performance. Result: **neither helped, and both regressed**.
+Two subset experiments tested whether a *stronger* LLM improves performance. The takeaway: **across model scale — flash-lite, gemini-2.5-pro, and claude-opus-4-8 — direction MCC stays pinned near zero. No model escapes the noise floor.** Neither frontier model delivered a reliable improvement over flash-lite on these subsets, which points to the *task* (semi-strong market efficiency on mega-caps) as the binding constraint — not model capability or scale. The per-model details below are exploratory (small, non-matched subsets); read them as "nothing here breaks the ceiling," not as a precise ranking.
 
 ### 6.1 gemini-2.5-pro
 
-Subset test on AAPL, AMZN, TSLA at MAX = 40 per quadrant, K = 5.
+Subset test on AAPL, AMZN, TSLA at MAX = 40 per ticker (4-way balanced), K = 5.
 
-| Ticker | Δ MCC (avg across 5 horizons) |
-|---|---:|
-| AAPL | **−0.13** (clear regression) |
-| AMZN | +0.08 (mixed, very small samples) |
-| TSLA | +0.11 (best result, but n = 40–68) |
+Overall metrics (3-ticker subset):
 
-Mechanism: pro's `pred_up_rate` on NEG-toned articles jumped from ~47% (flash-lite) to ~63% (pro). Pro hedges across both tones rather than committing to direction — the NEG-subset advantage that drove flash-lite's MCC was lost.
+| Horizon | Samples | Accuracy | MCC |
+|---|---:|---:|---:|
+| 1d  | 120 | 53.3% | +0.069 |
+| 3d  | 148 | 45.3% | −0.100 |
+| 5d  | 128 | 50.0% |  0.000 |
+| 10d | 132 | 46.2% | −0.078 |
+| 21d | 112 | 57.1% | +0.149 |
+
+Per-ticker at 1d (vs the corresponding committed flash-lite cell):
+
+| Ticker | n | Pro MCC | Flash-lite MCC |
+|---|---:|---:|---:|
+| AAPL | 40 | +0.100 | 0.000  |
+| AMZN | 40 | −0.231 | 0.000  |
+| TSLA | 40 | +0.306 | +0.081 |
+
+The result is **mixed, not a clean win or loss**. Pro's overall MCC sits above flash-lite's all-ticker numbers at 1d (+0.069) and 21d (+0.149) but is negative at 3d and 10d. Per-ticker at 1d, Pro beats flash-lite on TSLA and AAPL but collapses on AMZN. With only n = 40 per ticker the standard error (~±0.16) swamps these gaps, so the subset is too small to conclude that Pro helps or hurts.
 
 ### 6.2 claude-opus-4-8
 
-Independent test with a different model family. Subset on AAPL only at MAX = 40 per quadrant, K = 1 (Opus 4.8 does not accept the `temperature` parameter, so K-sample self-consistency was disabled).
+Independent test with a different model family. Subset on AAPL only at MAX = 40 (4-way balanced), K = 1 — Opus 4.8 does not accept the `temperature` parameter, so K-sample self-consistency was disabled. This makes the test *harder* for Claude (no vote-based denoising).
 
-| Horizon | n | Claude MCC | Flash-lite MCC | Δ MCC |
+| Horizon | n | Claude MCC | Flash-lite MCC (AAPL, committed) | Δ MCC |
 |---|---:|---:|---:|---:|
-| 1d  | 44 | +0.046 | +0.201 | −0.155 |
-| 3d  | 44 | +0.091 | +0.160 | −0.069 |
-| 5d  | 44 | −0.183 | +0.200 | **−0.383** |
-| 10d | 40 |  0.000 | +0.120 | −0.120 |
-| 21d | 40 | −0.052 | +0.059 | −0.111 |
+| 1d  | 44 | +0.046 | 0.000  | +0.046 |
+| 3d  | 44 | +0.091 | +0.020 | +0.071 |
+| 5d  | 44 | −0.183 | +0.100 | **−0.283** |
+| 10d | 40 |  0.000 | −0.020 | +0.020 |
+| 21d | 40 | −0.052 | −0.088 | +0.036 |
 
-Average Δ MCC = **−0.17**. Caveats: K = 1 (no vote-based denoising), n = 40–44 (wider error bars than the main pipeline), and Claude's relevance scoring selected a different article subset than gemini's. Even accounting for these, the 5d collapse (Δ −0.38) is far outside the noise band and the direction is consistent across horizons.
+Average Δ MCC ≈ **−0.02** — essentially neutral. Claude edges flash-lite at four of five horizons but suffers a sharp 5d dip (−0.18). Both models sit near zero on AAPL, and the comparison is confounded (Claude ran MAX = 40 / K = 1 on a different article subset than flash-lite's MAX = 100 / K = 11). The honest reading: **Opus 4.8 is roughly on par with flash-lite here, not clearly better** — a frontier model at far higher cost buys no measured edge.
 
 ### 6.3 Non-LLM baselines: FinBERT and price momentum
 
@@ -157,16 +185,17 @@ To verify the LLM pipeline adds value over simpler approaches, two non-LLM basel
 
 | Horizon | LLM MCC | FinBERT MCC | FinBERT 95% CI | Momentum MCC | Momentum 95% CI |
 |---|---:|---:|:---:|---:|:---:|
-| 1d  | **+0.126** | +0.007 | [−0.074, +0.089] | **−0.119** | [−0.203, **−0.038**] |
-| 3d  | +0.057 | −0.022 | [−0.104, +0.057] | −0.119 | [−0.202, −0.037] |
-| 5d  | +0.055 | −0.004 | [−0.092, +0.078] | −0.054 | [−0.139, +0.034] |
-| 10d | +0.029 | −0.038 | [−0.126, +0.044] | −0.083 | [−0.164, +0.011] |
-| 21d | +0.056 | −0.058 | [−0.147, +0.036] | +0.038 | [−0.056, +0.134] |
+| 1d  | **+0.045** | +0.007 | [−0.074, +0.089] | **−0.119** | [−0.203, **−0.038**] |
+| 3d  | +0.011 | −0.022 | [−0.104, +0.057] | **−0.119** | [−0.202, **−0.037**] |
+| 5d  | +0.008 | −0.004 | [−0.092, +0.078] | −0.054 | [−0.139, +0.034] |
+| 10d | +0.020 | −0.038 | [−0.126, +0.044] | −0.083 | [−0.164, +0.011] |
+| 21d | −0.050 | −0.058 | [−0.147, +0.036] | +0.038 | [−0.056, +0.134] |
 
-**The LLM pipeline beats both non-LLM baselines at every horizon.** At 1d the gap over FinBERT is +0.12 MCC, and the gap over momentum is +0.24 MCC. Two findings worth noting:
+**The LLM pipeline beats FinBERT at every horizon and beats momentum at 1d–10d**, though the margins are small. At 1d the gap over FinBERT is +0.038 MCC and the gap over momentum is +0.16 MCC. Three findings worth noting:
 
 - **FinBERT is essentially random** on this eval set — its 95% CI includes zero at every horizon. Off-the-shelf finance-tuned sentiment lacks the nuance to predict direction. FinBERT predicts UP ~66% of the time (similar to a "default to positive sentiment" classifier), but with a balanced 50/50 ground truth this no longer gives an accuracy boost.
-- **Momentum at 1d is *significantly negative*** (MCC −0.119, CI excludes zero on the negative side). This is consistent with short-term mean reversion: news-day articles in this dataset disproportionately follow recent trends that reverse over the next day. The 21d momentum is barely positive (+0.038, not significant), consistent with the well-known longer-horizon continuation effect.
+- **Momentum is *significantly negative* at 1d and 3d** (MCC −0.119, CI excludes zero on the negative side at both). This is consistent with short-term mean reversion: news-day articles in this dataset disproportionately follow recent trends that reverse over the next few days.
+- **At 21d, momentum (+0.038) actually edges out the LLM (−0.050)** — the only horizon where a baseline beats the pipeline. This is consistent with the well-known longer-horizon continuation effect, and with the LLM's own 21d signal being negative. The LLM's nominal "win" over FinBERT at 21d (−0.050 vs −0.058) is a tie within noise.
 
 ### 6.4 Joint conclusion across all comparisons
 
@@ -175,34 +204,34 @@ The LLM pipeline has now been compared against three classes of alternative:
 | Comparison | Result |
 |---|---|
 | Trivial baselines (always-UP, majority-class) | LLM beats them at 1d ✓ |
-| Off-the-shelf finance NLP (FinBERT) | LLM beats it at every horizon ✓ |
-| Pure price signal (20d momentum) | LLM beats it at every horizon ✓ |
-| Frontier LLMs (gemini-2.5-pro) | Pro regresses on AAPL by Δ MCC −0.13 ✓ |
-| Frontier LLMs (claude-opus-4-8) | Claude regresses on AAPL by Δ MCC −0.17 avg ✓ |
+| Off-the-shelf finance NLP (FinBERT) | LLM beats it at every horizon (small margin) ✓ |
+| Pure price signal (20d momentum) | LLM beats it at 1d–10d; momentum wins at 21d |
+| Frontier LLM (gemini-2.5-pro) | Mixed on a 3-ticker subset — inconclusive |
+| Frontier LLM (claude-opus-4-8) | ≈ on par with flash-lite on AAPL — inconclusive |
 
-The LLM pipeline occupies an interesting sweet spot: more nuanced than off-the-shelf sentiment, more committal than frontier hedging models, and meaningfully better than price-only signals. **The directness + factor-extraction + K=5 self-consistency design appears to be the right operating point** for this task.
+The LLM pipeline reliably beats off-the-shelf sentiment and short-horizon price momentum. The frontier-model comparisons, by contrast, are exploratory (small, non-matched subsets) and show **no model — flash-lite, pro, or Opus — climbing above the noise floor**: scaling up model capability does not rescue the task. The **directness + factor-extraction + K-sample self-consistency** design is therefore a sensible operating point, and `gemini-2.5-flash-lite` is the right ship choice on cost/latency grounds at no measured loss.
 
-That said, **the absolute size of the win remains modest** — 1d MCC +0.126 is real and significant, but the longer-horizon signals (3d-21d) are within noise even relative to FinBERT in some cases. The remaining gains are in input quality, decision-rule calibration, and dataset curation, not in model selection or scale.
+That said, **the absolute size of the win remains modest** — the single-run 1d MCC of +0.045 is within the run-to-run noise floor, and the longer-horizon signals (3d–21d) are within noise relative to FinBERT in most cases (and below momentum at 21d). The remaining gains are in input quality, decision-rule calibration, and dataset curation, not in model selection or scale.
 
 ## 7. Conclusions
 
 1. **The pipeline produces weak positive signal at 1-day horizon, within the noise floor.** Single-run K=11 MCC at 1d is +0.045; multi-run mean across three reruns is +0.037 with range 0.18. The magnitude is consistent with the literature ceiling for LLM-based direction prediction on mega-caps (~55-58% accuracy), but cannot be distinguished from zero in any single run with the current sample size. Longer horizons (3d-21d) are essentially noise. The pipeline does have a real positive expected value, but its absolute magnitude is small.
 
-2. **Signal is concentrated in NEG-toned articles.** Negative-factor-majority articles yield MCC +0.10 to +0.21 across horizons — substantially above the overall numbers. A practical pipeline would gate trades on tone.
+2. **Tone stratification did not reveal a usable NEG-subset signal in the final run.** Earlier (K=5) development runs suggested negative-toned articles carried most of the signal, but in the final K=11, 4-way-balanced run the POS/NEG MCC differences are small and insignificant — and the model actually predicts UP *more* on NEG-toned articles (~60–63%) than on POS-toned ones (~49–54%). We do not claim a deployable tone gate.
 
-3. **The LLM pipeline genuinely beats simpler alternatives.** It outperforms (a) trivial baselines (always-UP at 1d), (b) off-the-shelf finance-tuned sentiment (FinBERT — random at every horizon), and (c) pure price-signal momentum (significantly *negative* at 1d). The 1d gap of +0.12 MCC over FinBERT and +0.24 MCC over momentum is the strongest evidence that the two-step factor-extraction + K=5 self-consistency design is doing real work, not just adding compute over a simpler approach.
+3. **The LLM pipeline beats the simpler content and price baselines, by small margins.** It outperforms (a) trivial baselines (always-UP at 1d), (b) off-the-shelf finance-tuned sentiment (FinBERT — random at every horizon, beaten at all five), and (c) 20-day price momentum at 1d–10d (momentum is significantly *negative* at 1d and 3d, and overtakes the LLM only at 21d). The 1d gap of +0.038 MCC over FinBERT and +0.16 MCC over momentum is the clearest evidence that the two-step factor-extraction + K-sample self-consistency design does real work, not just added compute — though the absolute edge is small.
 
-4. **Model upgrade does not help — independently confirmed by two model families.** Both `gemini-2.5-pro` (AAPL regression Δ MCC −0.13) and `claude-opus-4-8` (AAPL Δ MCC −0.17 averaged across horizons) underperform `gemini-2.5-flash-lite`. The shared mechanism (frontier models hedge across tone categories rather than committing) suggests this is structural, not coincidental. The remaining gains live in input/output engineering, not model selection.
+4. **Model scale does not move the needle — the task is the bottleneck.** Across flash-lite, `gemini-2.5-pro` (3 tickers, n = 40 each), and `claude-opus-4-8` (AAPL only, K = 1), direction MCC stays near zero; no model escapes the noise floor. Neither frontier model delivered a reliable improvement (and the subsets are too small to claim a *regression* either). This points to semi-strong market efficiency on mega-caps as the binding constraint, not model capability — so `gemini-2.5-flash-lite` is the right ship choice on cost/latency at no measured loss, and the remaining gains live in input/output engineering and data curation, not model selection.
 
-5. **Per-ticker variance is large.** Strong performers (AAPL, GOOG, MSFT, NVDA, TSM) show clear positive signal; weak performers (AMZN, TSLA) are near random. Per-ticker calibration is a plausible next direction.
+5. **Per-ticker variance is large and mostly within noise.** Of the 35 (ticker × horizon) cells, only TSM @ 10d is a significant positive signal; NVDA @ 5d, MSFT @ 10d, and TSLA @ 21d are significantly negative; the remaining 31 are at chance. Individual per-ticker readings should not be over-interpreted; per-ticker calibration is a plausible next direction.
 
 6. **Key methodological contributions** that distinguish this pipeline from a naïve "ask the LLM for direction" baseline:
    - 4-way balanced selection eliminates input-tone bias on top of class balance
-   - K = 5 self-consistency produces a continuous, calibrated P(UP) score
+   - K = 11 self-consistency produces a continuous, calibrated P(UP) score
    - Per-horizon balanced evaluation enables clean MCC interpretation (sign-of-MCC matches sign-of-edge)
-   - Tone stratification surfaces *where* the signal actually lives within the dataset
+   - Tone stratification tests whether the signal concentrates in any article-sentiment subset
    - Bootstrap confidence intervals on MCC distinguish real signal from sampling noise at each horizon
-   - Comparisons against FinBERT, momentum, and frontier LLMs establish that the two-step design is doing more than a single simpler approach could
+   - Comparisons against FinBERT, momentum, and frontier LLMs place the two-step design against both simpler and larger alternatives
 
 ## 8. Limitations and Threats to Validity
 
@@ -216,7 +245,9 @@ This section catalogs what the evaluation does *not* claim and where the methodo
 
 ### 8.2 Failed experiment: prompt-level UP-bias correction
 
-The pipeline's predUP rate runs at ~67-77% across horizons even though the eval set is 50/50 by construction. We attempted to correct this via two prompt-level interventions:
+*(This subsection documents a **development-run experiment conducted at K=5**, before the final pipeline settings. The absolute "before" numbers below come from that run — the final committed K=11 run has a lower predUP rate of ~54–58% and 1d MCC +0.045 — but the qualitative finding is robust.)*
+
+In that development run the pipeline's predUP rate ran high (~67–77% across horizons) even though the eval set is 50/50 by construction. We attempted to correct this via two prompt-level interventions:
 
 1. Adding a "calibration note" at the top of the prediction prompt explicitly telling the model the distribution is 50/50 and not to default to UP based on positive tone.
 2. Revising the 1d horizon instruction to flag short-term mean reversion (consistent with the −0.119 MCC of the 20-day momentum baseline at 1d).
@@ -254,7 +285,7 @@ Within-run bootstrap CIs all have width ~0.17, but the actual run-to-run range a
 
 ### 8.5 What the evaluation does NOT measure
 
-- **No backtesting or P&L simulation.** We measure direction accuracy, not trading profitability. Transaction costs, slippage, market impact, position sizing, and risk management are not modeled. Translating MCC +0.126 to a profitable trading strategy is non-trivial and depends on factors beyond this evaluation.
+- **No backtesting or P&L simulation.** We measure direction accuracy, not trading profitability. Transaction costs, slippage, market impact, position sizing, and risk management are not modeled. Translating a single-digit MCC (≈+0.045 at 1d) to a profitable trading strategy is non-trivial and depends on factors beyond this evaluation.
 - **Non-LLM comparisons cover the obvious alternatives but not all.** Section 6.3 compares against FinBERT (off-the-shelf finance sentiment) and 20-day price momentum, and the LLM wins both at every horizon. Not tested: domain-specific lexicon methods (e.g. Loughran-McDonald), supervised classifiers trained on labeled finance text, and more sophisticated price-based strategies (mean-reversion ensembles, regime-switching models). A skeptic could reasonably ask whether a well-tuned supervised classifier would close the gap.
 - **No human-expert baseline.** We do not measure how a financial analyst reading the same articles would perform. The "ceiling" set by published LLM benchmarks (~55-58% accuracy) may itself be below what attentive humans achieve.
 

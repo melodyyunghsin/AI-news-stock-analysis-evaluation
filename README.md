@@ -11,6 +11,22 @@ financial news headlines + bodies, evaluated against actual returns at
 > This repo is the offline benchmark used to pick which model the extension
 > ships with.
 
+## Key finding
+
+Across the seven US-listed mega-cap tickers tested (AAPL, MSFT, NVDA, AMZN,
+TSLA, GOOG, TSM), LLM direction predictions are statistically indistinguishable
+from random: overall Matthews correlation coefficient (MCC) point estimates
+range from −0.050 to +0.045 across the five horizons, and every bootstrap 95%
+confidence interval spans zero. Of the 35 individual ticker × horizon cells,
+only four have 95% CIs excluding zero (one positive, three negative), and none
+survive Bonferroni or Benjamini–Hochberg FDR correction for multiple
+comparisons. Larger models did not measurably outperform
+`gemini-2.5-flash-lite` in subset tests — neither `gemini-2.5-pro`
+(AAPL/AMZN/TSLA) nor `claude-opus-4-8` (AAPL only) escaped the noise floor. We
+report this as a negative finding, and a paper writing it up is in preparation;
+full numbers are in [EVALUATION_PROCESS.md](EVALUATION_PROCESS.md) and
+[`multiple_comparison_results.csv`](data/balanced_focused_evaluation_summary_gemini_k5/multiple_comparison_results.csv).
+
 ## What's in this repo
 
 ```
@@ -18,7 +34,7 @@ Evaluation_v2/
 ├── Prediction
 │   ├── qwen_predict.py            # Local Qwen-7B via Ollama (primary model)
 │   ├── gemini_predict.py          # Google Gemini (multi-key round-robin)
-│   └── claude_ceiling_test.py     # Claude frontier-model ceiling baseline
+│   └── claude_ceiling_test_v2.py  # Claude frontier-model ceiling baseline
 │
 ├── Data prep
 │   ├── audit_articles.py          # Quality audit on raw return_batches
@@ -84,7 +100,7 @@ data and raw `data/article_batches/*.parquet` ready:
                                   → adds actual_return_{h}, actual_direction_{h}
 4. qwen_predict.py                → writes data/prediction_batches_qwen/
    (and/or) gemini_predict.py     → writes data/prediction_batches/
-   (and/or) claude_ceiling_test.py
+   (and/or) claude_ceiling_test_v2.py
 5. backfill_majority_direction.py → adds actual_majority_direction_{h}
    backfill_relevance_column.py   → lifts relevance to top-level column
 6. merge_evaluation.py            → writes data/evaluation_summary*/
@@ -126,8 +142,8 @@ Then run the pipeline above.
 | Script | Model | Where it runs |
 |---|---|---|
 | `qwen_predict.py` | `qwen2.5:7b` | local via Ollama |
-| `gemini_predict.py` | `gemini-3.1-flash-lite-preview` | Google API |
-| `claude_ceiling_test.py` | `claude-opus-4-7` | Anthropic API |
+| `gemini_predict.py` | `gemini-2.5-flash-lite` | Google API |
+| `claude_ceiling_test_v2.py` | `claude-opus-4-8` | Anthropic API |
 
 ## Notes on safety
 
